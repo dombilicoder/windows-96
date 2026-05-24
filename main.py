@@ -88,7 +88,7 @@ class Windows96(commands.Bot):
                         position = vc.position
                         length = vc.current.length
                         paused = vc.paused
-                        dongu = getattr(vc, "dongu_acik", False) # Döngü durumunu çekiyoruz
+                        dongu = getattr(vc, "dongu_acik", False)
                         
                         total_bars = 15
                         percentage = position / length if length > 0 else 0
@@ -102,13 +102,13 @@ class Windows96(commands.Bot):
                         p_min, p_sec = divmod(int(position / 1000), 60)
                         l_min, l_sec = divmod(int(length / 1000), 60)
                         
-                        # --- EMOJİ ÖNCELİK SIRALAMASI ---
-                        if dongu:
-                            emoji = "🔁" # Döngü açıksa her halükarda döngü emojisi gözüksün
-                        else:
-                            emoji = "⏸️" if paused else "🎵"
-                        
+                        emoji = "⏸️" if paused else "🎵"
                         embed.description = f"{emoji} `{''.join(bar_list)}` `{p_min:02d}:{p_sec:02d}/{l_min:02d}:{l_sec:02d}`"
+                        
+                        # --- DÖNGÜ ALANINI GÜNCELLEME (İndeks: 3) ---
+                        dongu_metni = "`Açık` 🔁" if dongu else "`Kapalı` ❌"
+                        embed.set_field_at(3, name="🔄 Döngü", value=dongu_metni, inline=True)
+                        
                         await vc.aktif_mesaj.edit(embed=embed)
                     except:
                         pass
@@ -120,8 +120,6 @@ bot = Windows96()
 async def on_wavelink_track_start(payload: wavelink.TrackStartEventPayload):
     player = payload.player
     track = payload.track
-    if not hasattr(player, "dongu_acik"):
-        player.dongu_acik = False
     if not player or not hasattr(player, "metin_kanali"):
         return
         
@@ -145,9 +143,16 @@ async def on_wavelink_track_start(payload: wavelink.TrackStartEventPayload):
         description=f"🎵 `•--------------` `00:00/{sure_metni}`",
         color=discord.Color.red()
     )
+    
+    # Döngü durumunu kontrol et
+    dongu = getattr(player, "dongu_acik", False)
+    dongu_metni = "`Açık` 🔁" if dongu else "`Kapalı` ❌"
+
+    # Yan yana 4 alan (Masaüstünde çok şık durur, mobilde alt alta kırılır)
     embed.add_field(name="👤 Sanatçı", value=f"`{track.author}`", inline=True)
     embed.add_field(name="⏱️ Süre", value=f"`{sure_metni}`", inline=True)
     embed.add_field(name="🔊 Ses Seviyesi", value=f"`%{player.volume}`", inline=True)
+    embed.add_field(name="🔄 Döngü", value=dongu_metni, inline=True) # 4. Alan eklendi
     
     embed.set_footer(text=footer_metni, icon_url=profil_foto_url)
     

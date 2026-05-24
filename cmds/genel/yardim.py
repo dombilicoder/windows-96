@@ -13,7 +13,6 @@ class Yardim(commands.Cog):
             color=discord.Color.teal()
         )
 
-        # --- MÜZİK KOMUTLARI ---
         muzik_komutlari = (
             "`w.oynat <şarkı>`: İstediğin şarkıyı arar, detaylı panel açarak çalar.\n"
             "`w.dur`: Çalan şarkıyı anlık duraklatır (Sessiz çalışır).\n"
@@ -31,7 +30,6 @@ class Yardim(commands.Cog):
             inline=False
         )
 
-        # --- GENEL KOMUTLAR ---
         genel_komutlari = (
             "`w.yardım`: Bu yardım menüsünü gösterir.\n"
             "`w.emoji`: Sunucudaki tüm emojileri ID'leri ile birlikte listeler."
@@ -42,7 +40,6 @@ class Yardim(commands.Cog):
             inline=False
         )
 
-        # --- MODERASYON KOMUTLARI ---
         mod_komutlari = (
             "`w.sil <miktar>`: Kanaldaki mesajları toplu olarak siler. *(Maks: 100)*"
         )
