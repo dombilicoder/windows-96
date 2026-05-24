@@ -88,6 +88,7 @@ class Windows96(commands.Bot):
                         position = vc.position
                         length = vc.current.length
                         paused = vc.paused
+                        dongu = getattr(vc, "dongu_acik", False) # Döngü durumunu çekiyoruz
                         
                         total_bars = 15
                         percentage = position / length if length > 0 else 0
@@ -100,7 +101,12 @@ class Windows96(commands.Bot):
                         
                         p_min, p_sec = divmod(int(position / 1000), 60)
                         l_min, l_sec = divmod(int(length / 1000), 60)
-                        emoji = "⏸️" if paused else "🎵"
+                        
+                        # --- EMOJİ ÖNCELİK SIRALAMASI ---
+                        if dongu:
+                            emoji = "🔁" # Döngü açıksa her halükarda döngü emojisi gözüksün
+                        else:
+                            emoji = "⏸️" if paused else "🎵"
                         
                         embed.description = f"{emoji} `{''.join(bar_list)}` `{p_min:02d}:{p_sec:02d}/{l_min:02d}:{l_sec:02d}`"
                         await vc.aktif_mesaj.edit(embed=embed)
@@ -114,6 +120,8 @@ bot = Windows96()
 async def on_wavelink_track_start(payload: wavelink.TrackStartEventPayload):
     player = payload.player
     track = payload.track
+    if not hasattr(player, "dongu_acik"):
+        player.dongu_acik = False
     if not player or not hasattr(player, "metin_kanali"):
         return
         
@@ -158,30 +166,40 @@ async def on_wavelink_track_end(payload: wavelink.TrackEndEventPayload):
     if not player:
         return
         
+    dongu_modu = getattr(player, "dongu_acik", False)
+        
     if getattr(player, "aktif_mesaj", None):
         try:
             embed = player.aktif_mesaj.embeds[0]
             length = track.length
             
-            # Şarkı bittiği için noktayı kaldırıyoruz, sadece düz çizgiler bırakıyoruz
             total_bars = 15
             bar_text = "-" * total_bars
             
             l_min, l_sec = divmod(int(length / 1000), 60)
             sure_metni = f"{l_min:02d}:{l_sec:02d}"
             
-            # description kısmında bar_list yerine doğrudan oluşturduğumuz bar_text'i veriyoruz
-            embed.description = f"🏁 `{bar_text}` `{sure_metni}/{sure_metni}`"
-            embed.color = discord.Color.green()
+            # Eğer şarkı döngüde bittiyse yeşile dönmesin, tekrar başlayacağı için geçici bitiş emojisi koyalım
+            if dongu_modu:
+                embed.description = f"🔁 `{bar_text}` `{sure_metni}/{sure_metni}` (Tekrar Oynatılıyor...)"
+            else:
+                embed.description = f"🏁 `{bar_text}` `{sure_metni}/{sure_metni}`"
+                embed.color = discord.Color.green()
             
             await player.aktif_mesaj.edit(embed=embed)
         except Exception as e:
-            print(f"Bitiş embed'ı güncellenirken hata oluştu: {e}")
+            pass
 
     player.aktif_mesaj = None
     
-    if not player.queue.is_empty:
-        await player.play(player.queue.get())
+    # --- DÖNGÜ KONTROL SİSTEMİ ---
+    if dongu_modu:
+        # Şarkı bittiyse ve döngü açıksa aynı track nesnesini tekrar oynatıyoruz
+        await player.play(track)
+    else:
+        # Döngü kapalıysa normal sıradan devam et
+        if not player.queue.is_empty:
+            await player.play(player.queue.get())
 
 if __name__ == "__main__":
     bot.run(TOKEN)

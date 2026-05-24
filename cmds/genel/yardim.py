@@ -20,6 +20,7 @@ class Yardim(commands.Cog):
             "`w.devam`: Duraklatılan şarkıyı sürdürür (Sessiz çalışır).\n"
             "`w.sar <saniye>`: Şarkıyı belirtilen saniye kadar ileri sarar.\n"
             "`w.geç`: Çalan şarkıyı atlar, sıradakine geçer.\n"
+            "`w.döngü`: Aktif şarkıyı sonsuz döngüye alır veya döngüyü kapatır (Sessiz çalışır).\n"
             "`w.sıra`: O anki aktif müzik sırasını listeler.\n"
             "`w.ses <0-500>`: Seviyeyi ayarlar ve canlı paneli günceller.\n"
             "`w.bitir`: Müziği tamamen kapatır ve sırayı temizler."
