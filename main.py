@@ -163,19 +163,20 @@ async def on_wavelink_track_end(payload: wavelink.TrackEndEventPayload):
             embed = player.aktif_mesaj.embeds[0]
             length = track.length
             
+            # Şarkı bittiği için noktayı kaldırıyoruz, sadece düz çizgiler bırakıyoruz
             total_bars = 15
-            bar_list = ["-"] * total_bars
-            bar_list[-1] = "•"
+            bar_text = "-" * total_bars
             
             l_min, l_sec = divmod(int(length / 1000), 60)
             sure_metni = f"{l_min:02d}:{l_sec:02d}"
             
-            embed.description = f"🏁 `{''.join(bar_list)}` `{sure_metni}/{sure_metni}`"
+            # description kısmında bar_list yerine doğrudan oluşturduğumuz bar_text'i veriyoruz
+            embed.description = f"🏁 `{bar_text}` `{sure_metni}/{sure_metni}`"
             embed.color = discord.Color.green()
             
             await player.aktif_mesaj.edit(embed=embed)
         except Exception as e:
-            pass
+            print(f"Bitiş embed'ı güncellenirken hata oluştu: {e}")
 
     player.aktif_mesaj = None
     
