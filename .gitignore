@@ -1,0 +1,11 @@
+# Çevre Değişkenleri
+.env
+
+# Python Cache
+__pycache__/
+*.pyc
+
+# Sanal Ortamlar
+venv/
+.venv/
+env/
