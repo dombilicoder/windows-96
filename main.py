@@ -77,7 +77,7 @@ class Windows96(commands.Bot):
     async def durum_degistir(self):
         await self.change_presence(activity=discord.Game(name=next(durumlar)))
 
-    @tasks.loop(seconds=3)
+    @tasks.loop(seconds=1)  # 3 olan süreyi 1'e düşürdük, artık saniye saniye akacak
     async def embed_guncelleyici(self):
         for guild in self.guilds:
             vc = guild.voice_client
@@ -123,12 +123,29 @@ async def on_wavelink_track_start(payload: wavelink.TrackStartEventPayload):
     if not player or not hasattr(player, "metin_kanali"):
         return
         
-    player.aktif_mesaj = None
     saniye = int(track.length / 1000)
     dakika, saniye = divmod(saniye, 60)
     sure_metni = f"{dakika}:{saniye:02d}"
     
     isteyen_uye = getattr(player, "guncel_isteyen", None)
+    dongu = getattr(player, "dongu_acik", False)
+    
+    # --- [YENİ] DÖNGÜ RECYCLE KONTROLÜ ---
+    # Döngü açıksa ve halihazırda bir panel mesajı varsa yenisini gönderme, mevcudu güncelle!
+    if dongu and getattr(player, "aktif_mesaj", None):
+        try:
+            embed = player.aktif_mesaj.embeds[0]
+            embed.color = discord.Color.purple()  # Rengi mora çeviriyoruz
+            embed.description = f"🔁 `•--------------` `00:00/{sure_metni}`"  # Sayacı sıfırlıyoruz
+            embed.set_field_at(3, name="🔄 Döngü", value="`Açık` 🔁", inline=True)
+            
+            await player.aktif_mesaj.edit(embed=embed)
+            return  # Fonksiyonu burada kesiyoruz, böylece yeni mesaj atılmıyor!
+        except:
+            pass  # Eğer mesaj bir şekilde silindiyse kodun çökmemesi için aşağıdan yeni mesaj basacak
+            
+    # Döngü yoksa veya mesaj bulunamadıysa normal sıfır kilometre panel açılışı
+    player.aktif_mesaj = None
     
     if isteyen_uye:
         footer_metni = f"İsteyen: {isteyen_uye.display_name} | Windows 96"
@@ -141,18 +158,15 @@ async def on_wavelink_track_start(payload: wavelink.TrackStartEventPayload):
         title=f"🎶 {track.title}",
         url=track.uri,
         description=f"🎵 `•--------------` `00:00/{sure_metni}`",
-        color=discord.Color.red()
+        color=discord.Color.purple() if dongu else discord.Color.red()
     )
     
-    # Döngü durumunu kontrol et
-    dongu = getattr(player, "dongu_acik", False)
     dongu_metni = "`Açık` 🔁" if dongu else "`Kapalı` ❌"
 
-    # Yan yana 4 alan (Masaüstünde çok şık durur, mobilde alt alta kırılır)
     embed.add_field(name="👤 Sanatçı", value=f"`{track.author}`", inline=True)
     embed.add_field(name="⏱️ Süre", value=f"`{sure_metni}`", inline=True)
     embed.add_field(name="🔊 Ses Seviyesi", value=f"`%{player.volume}`", inline=True)
-    embed.add_field(name="🔄 Döngü", value=dongu_metni, inline=True) # 4. Alan eklendi
+    embed.add_field(name="🔄 Döngü", value=dongu_metni, inline=True)
     
     embed.set_footer(text=footer_metni, icon_url=profil_foto_url)
     
@@ -173,36 +187,32 @@ async def on_wavelink_track_end(payload: wavelink.TrackEndEventPayload):
         
     dongu_modu = getattr(player, "dongu_acik", False)
         
-    if getattr(player, "aktif_mesaj", None):
-        try:
-            embed = player.aktif_mesaj.embeds[0]
-            length = track.length
-            
-            total_bars = 15
-            bar_text = "-" * total_bars
-            
-            l_min, l_sec = divmod(int(length / 1000), 60)
-            sure_metni = f"{l_min:02d}:{l_sec:02d}"
-            
-            # Eğer şarkı döngüde bittiyse yeşile dönmesin, tekrar başlayacağı için geçici bitiş emojisi koyalım
-            if dongu_modu:
-                embed.description = f"🔁 `{bar_text}` `{sure_metni}/{sure_metni}` (Tekrar Oynatılıyor...)"
-            else:
+    # --- [YENİ] YALNIZCA DÖNGÜ KAPALIYSA BİTİŞ EKRANI YAP ---
+    if not dongu_modu:
+        if getattr(player, "aktif_mesaj", None):
+            try:
+                embed = player.aktif_mesaj.embeds[0]
+                length = track.length
+                
+                total_bars = 15
+                bar_text = "-" * total_bars
+                
+                l_min, l_sec = divmod(int(length / 1000), 60)
+                sure_metni = f"{l_min:02d}:{l_sec:02d}"
+                
                 embed.description = f"🏁 `{bar_text}` `{sure_metni}/{sure_metni}`"
-                embed.color = discord.Color.green()
-            
-            await player.aktif_mesaj.edit(embed=embed)
-        except Exception as e:
-            pass
+                embed.color = discord.Color.green()  # Sadece tamamen bittiğinde yeşil olur
+                
+                await player.aktif_mesaj.edit(embed=embed)
+            except Exception as e:
+                pass
 
-    player.aktif_mesaj = None
+        player.aktif_mesaj = None  # Sadece döngü kapalıysa mesaj hafızasını sıfırla
     
     # --- DÖNGÜ KONTROL SİSTEMİ ---
     if dongu_modu:
-        # Şarkı bittiyse ve döngü açıksa aynı track nesnesini tekrar oynatıyoruz
         await player.play(track)
     else:
-        # Döngü kapalıysa normal sıradan devam et
         if not player.queue.is_empty:
             await player.play(player.queue.get())
 
