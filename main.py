@@ -187,7 +187,7 @@ async def on_wavelink_track_end(payload: wavelink.TrackEndEventPayload):
         
     dongu_modu = getattr(player, "dongu_acik", False)
         
-    # --- [YENİ] YALNIZCA DÖNGÜ KAPALIYSA BİTİŞ EKRANI YAP ---
+    # --- YALNIZCA DÖNGÜ KAPALIYSA BİTİŞ EKRANI YAP ---
     if not dongu_modu:
         if getattr(player, "aktif_mesaj", None):
             try:
@@ -201,7 +201,7 @@ async def on_wavelink_track_end(payload: wavelink.TrackEndEventPayload):
                 sure_metni = f"{l_min:02d}:{l_sec:02d}"
                 
                 embed.description = f"🏁 `{bar_text}` `{sure_metni}/{sure_metni}`"
-                embed.color = discord.Color.green()  # Sadece tamamen bittiğinde yeşil olur
+                embed.color = discord.Color.green()
                 
                 await player.aktif_mesaj.edit(embed=embed)
             except Exception as e:
@@ -209,9 +209,19 @@ async def on_wavelink_track_end(payload: wavelink.TrackEndEventPayload):
 
         player.aktif_mesaj = None  # Sadece döngü kapalıysa mesaj hafızasını sıfırla
     
-    # --- DÖNGÜ KONTROL SİSTEMİ ---
+    # --- DÖNGÜ KONTROLÜ VE LİNK TAZELEME SİSTEMİ (ZOMBİ BOT ENGELLEYİCİ) ---
     if dongu_modu:
-        await player.play(track)
+        try:
+            # Şarkı bittiğinde aynı ölü objeyi çalmak yerine, URL üzerinden taze bir arama yapıyoruz
+            taze_sarkilar = await wavelink.Playable.search(track.uri)
+            if taze_sarkilar:
+                taze_sarki = taze_sarkilar[0]
+                await player.play(taze_sarki)
+            else:
+                # Herhangi bir sebeple bulamazsa eskisini denemeye devam et
+                await player.play(track) 
+        except Exception:
+            await player.play(track)
     else:
         if not player.queue.is_empty:
             await player.play(player.queue.get())
