@@ -6,7 +6,7 @@ class Sonsuz(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         # Patlama riski olmayan, klasikleşmiş YouTube linkini gömüyoruz
-        self.muzik_linki = "https://www.youtube.com/watch?v=J_36x1_LKgg"
+        self.muzik_linki = "https://www.youtube.com/watch?v=niPsF2EJ7IE&t=7s"
 
     @commands.command(name="sonsuz", hidden=True)
     @commands.has_permissions(manage_messages=True)
