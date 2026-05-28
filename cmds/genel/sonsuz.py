@@ -1,13 +1,11 @@
 import discord
 from discord.ext import commands
 import wavelink
+import os
 
 class Sonsuz(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        # Discord linki bir süre sonra patlarsa, buraya doğrudan bir YouTube linki yapıştırabilirsin.
-        # Örn: "https://www.youtube.com/watch?v=J_36x1_LKgg"
-        self.muzik_linki = "https://cdn.discordapp.com/attachments/1509361095905644554/1509361124989210707/gnosienneno1.mp3?ex=6a18e596&is=6a179416&hm=8473c2c5819b1cabc0608ff7cbdbad7f7224617356a9c2938e00d4a27a9a844a&"
 
     @commands.command(name="sonsuz", hidden=True)
     @commands.has_permissions(manage_messages=True)
@@ -15,30 +13,32 @@ class Sonsuz(commands.Cog):
         if not ctx.author.voice:
             return await ctx.send("❌ Önce bir ses kanalına katılmalısın!")
 
-        # Bota bağlan veya zaten bağlıysa mevcut player'ı al
         if not ctx.voice_client:
             vc: wavelink.Player = await ctx.author.voice.channel.connect(cls=wavelink.Player)
         else:
             vc: wavelink.Player = ctx.voice_client
 
+        # Botun ana klasöründeki gnosienneno1.mp3 dosyasını hedef alıyoruz
+        dosya_yolu = os.path.abspath("gnosienneno1.mp3")
+        
+        if not os.path.exists(dosya_yolu):
+            return await ctx.send("❌ `gnosienneno1.mp3` dosyası Render sunucusunda (ana klasörde) bulunamadı! Lütfen dosyayı git ile pushladığından emin ol.")
+
         try:
-            # Wavelink ile URL üzerinden şarkıyı aratıyoruz
-            sarkilar = await wavelink.Playable.search(self.muzik_linki)
+            # Wavelink'e yerel dosyanın tam yolunu veriyoruz
+            sarkilar = await wavelink.Playable.search(dosya_yolu)
             if not sarkilar:
-                return await ctx.send("❌ Link okunamadı! (Discord linkinin süresi dolmuş olabilir).")
+                return await ctx.send("❌ Dosya Render üzerinde Lavalink tarafından okunamadı.")
             
-            # Wavelink search genelde URL'ler için liste döndürür, ilkini alıyoruz
-            sarki = sarkilar[0] if isinstance(sarkilar, list) else sarkilar
+            sarki = sarkilar[0]
             
-            # Zombi bot olmasını engelleyen döngü modumuzu açıyoruz
             vc.dongu_acik = True
             
-            # Eğer daha önceden başka bir şarkı çalıyorsa durdur
             if vc.is_playing():
                 await vc.stop()
                 
             await vc.play(sarki)
-            await ctx.send("♾️ **Sonsuz Mod Aktif:** Gnossienne No.1 döngüye alındı. Kapatmak için `w.sonsuz-iptal` yazın.")
+            await ctx.send("♾️ **Sonsuz Mod Aktif:** Render üzerindeki `gnosienneno1.mp3` döngüye alındı. Kapatmak için `w.sonsuz-iptal` yazın.")
             
         except Exception as e:
             await ctx.send(f"❌ Bir hata oluştu: {e}")
@@ -50,7 +50,7 @@ class Sonsuz(commands.Cog):
             return await ctx.send("❌ Bot zaten seste değil hacı.")
         
         vc: wavelink.Player = ctx.voice_client
-        vc.dongu_acik = False  # Döngüyü kır
+        vc.dongu_acik = False
         await vc.stop()
         await vc.disconnect()
         
