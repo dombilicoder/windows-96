@@ -34,7 +34,8 @@ class Sonsuz(commands.Cog):
             
             vc.dongu_acik = True
             
-            if vc.is_playing():
+            # HATA VEREN KISIM BURASIYDI, "playing" OLARAK DÜZELTİLDİ:
+            if vc.playing:
                 await vc.stop()
                 
             await vc.play(sarki)
@@ -51,7 +52,11 @@ class Sonsuz(commands.Cog):
         
         vc: wavelink.Player = ctx.voice_client
         vc.dongu_acik = False
-        await vc.stop()
+        
+        # Olası bir hatayı önlemek için burayı da playing olarak kontrol edelim
+        if vc.playing:
+            await vc.stop()
+            
         await vc.disconnect()
         
         await ctx.send("🛑 **Sonsuz Mod Kapatıldı:** Müzik bitirildi ve kanaldan çıkıldı.")
