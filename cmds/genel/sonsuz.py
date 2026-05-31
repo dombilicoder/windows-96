@@ -5,8 +5,7 @@ import wavelink
 class Sonsuz(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        # Patlama riski olmayan, klasikleşmiş YouTube linkini gömüyoruz
-        self.muzik_linki = "https://www.youtube.com/watch?v=niPsF2EJ7IE&t=7s"
+        self.muzik_linki = "https://www.youtube.com/watch?v=J_36x1_LKgg"
 
     @commands.command(name="sonsuz", hidden=True)
     @commands.has_permissions(manage_messages=True)
@@ -20,7 +19,6 @@ class Sonsuz(commands.Cog):
             vc: wavelink.Player = ctx.voice_client
 
         try:
-            # Artık sahte local dosyalarla uğraşmıyoruz, direkt YouTube URL'sini çekiyoruz
             sarkilar = await wavelink.Playable.search(self.muzik_linki)
             if not sarkilar:
                 return await ctx.send("❌ Şarkı YouTube üzerinden çekilemedi.")
@@ -33,7 +31,7 @@ class Sonsuz(commands.Cog):
                 await vc.stop()
                 
             await vc.play(sarki)
-            await ctx.send("♾️ **Sonsuz Mod Aktif:** Gnossienne No.1 (YouTube üzerinden) döngüye alındı. Kapatmak için `w.sonsuz-iptal` yazın.")
+            await ctx.send("♾️ **Sonsuz Mod Aktif:** Gnossienne No.1 döngüye alındı. Kapatmak için `w.sonsuz-iptal` yazın.")
             
         except Exception as e:
             await ctx.send(f"❌ Bir hata oluştu: {e}")
@@ -50,9 +48,9 @@ class Sonsuz(commands.Cog):
         if vc.playing:
             await vc.stop()
             
-        await vc.disconnect()
+        # DISCONNECT SATIRINI SİLDİK
         
-        await ctx.send("🛑 **Sonsuz Mod Kapatıldı:** Müzik bitirildi ve kanaldan çıkıldı.")
+        await ctx.send("🛑 **Sonsuz Mod Kapatıldı:** Döngü kırıldı ve müzik durduruldu. Bot kanalda bekliyor.")
 
     @sonsuz.error
     @sonsuz_iptal.error
